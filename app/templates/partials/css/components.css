@@ -1,0 +1,718 @@
+/* Reusable components: navigation, buttons, controls, dialogs, toast, code. */
+
+/* ---- Navigation ---------------------------------------------------------- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(245, 245, 247, 0.8);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 240ms ease;
+  view-transition-name: site-nav;
+}
+
+.nav.is-scrolled {
+  border-bottom-color: var(--line);
+}
+
+.nav-inner {
+  max-width: 1080px;
+  height: 56px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--text);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2px;
+}
+
+.nav-link {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  color: var(--text-2);
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.nav-link:hover {
+  color: var(--text);
+}
+
+.nav-link[aria-current="page"] {
+  color: var(--text);
+  background: var(--fill);
+  font-weight: 500;
+}
+
+.nav-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+@media (max-width: 560px) {
+  .nav-inner {
+    padding: 0 12px 0 16px;
+    gap: 14px;
+  }
+
+  .brand-name {
+    display: none;
+  }
+}
+
+/* ---- Buttons --------------------------------------------------------------- */
+.btn {
+  --h: 40px;
+  --spin: var(--text);
+  position: relative;
+  height: var(--h);
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 160ms ease, color 160ms ease, opacity 160ms ease,
+    transform 200ms var(--ease-out);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.btn .i {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-primary {
+  --spin: #fff;
+  background: var(--text);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #424245;
+}
+
+.btn-secondary {
+  background: var(--fill);
+}
+
+.btn-secondary:hover {
+  background: var(--fill-hover);
+}
+
+.btn-ghost {
+  color: var(--text-2);
+}
+
+.btn-ghost:hover {
+  color: var(--text);
+  background: var(--fill);
+}
+
+.btn-danger {
+  --spin: #fff;
+  background: var(--red-text);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: #b8000f;
+}
+
+.btn-sm {
+  --h: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.btn .arrow {
+  transition: transform 260ms var(--ease-out);
+}
+
+.btn:hover .arrow {
+  transform: translateX(3px);
+}
+
+.btn.is-loading {
+  color: transparent;
+  pointer-events: none;
+}
+
+.btn.is-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--spin);
+  border-right-color: transparent;
+  animation: spin 700ms linear infinite;
+}
+
+.is-spinning .i {
+  animation: spin 800ms linear infinite;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  color: var(--text-2);
+  transition: background-color 160ms ease, color 160ms ease, transform 200ms var(--ease-out);
+}
+
+.icon-btn:hover {
+  color: var(--text);
+  background: var(--fill);
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+/* Copy buttons swap their icon for a check mark after copying. */
+.copy-btn .i {
+  grid-area: 1 / 1;
+  transition: opacity 200ms ease, transform 300ms var(--ease-out);
+}
+
+.copy-btn .i-done {
+  opacity: 0;
+  transform: scale(0.5);
+  color: var(--green);
+}
+
+.copy-btn.is-copied .i-idle {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.copy-btn.is-copied .i-done {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---- Surfaces -------------------------------------------------------------- */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 700ms linear infinite;
+}
+
+/* Height animation via grid rows; content is hidden from tab order when closed. */
+.collapse {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 450ms var(--ease-out), opacity 300ms ease;
+}
+
+.collapse.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 450ms;
+}
+
+.collapse.is-open > .collapse-inner {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* ---- Status dot -------------------------------------------------------------- */
+.dot {
+  --c: var(--gray-dot);
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--c);
+  transition: background-color 500ms ease, box-shadow 500ms ease;
+}
+
+.dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--c);
+  opacity: 0;
+}
+
+.dot[data-tone="green"] {
+  --c: var(--green);
+  box-shadow: 0 0 0 4px var(--green-soft);
+}
+
+.dot[data-tone="blue"] {
+  --c: var(--accent);
+}
+
+.dot[data-tone="blue"]::after {
+  animation: pulse-ring 1.8s var(--ease-out) infinite;
+}
+
+.dot[data-tone="red"] {
+  --c: var(--red);
+  box-shadow: 0 0 0 4px var(--red-soft);
+}
+
+/* ---- Segmented control (radio inputs + sliding thumb) ---------------------------- */
+.segmented {
+  --n: 2;
+  --idx: 0;
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--track);
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented label {
+  position: relative;
+  z-index: 1;
+  height: 32px;
+  padding: 0 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: color 200ms ease;
+}
+
+.segmented label:hover,
+.segmented input:checked + label {
+  color: var(--text);
+}
+
+.segmented input:focus-visible + label {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.seg-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / var(--n));
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  transform: translateX(calc(var(--idx) * 100%));
+  transition: transform 380ms var(--ease-out);
+}
+
+.segmented:not(.is-ready) .seg-thumb {
+  transition: none;
+}
+
+.segmented.is-empty .seg-thumb {
+  opacity: 0;
+}
+
+@media (max-width: 480px) {
+  .segmented label {
+    padding: 0 4px;
+    font-size: 13px;
+  }
+}
+
+.segmented-sm {
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.segmented-sm label {
+  height: 26px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.segmented-sm .seg-thumb {
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / var(--n));
+  border-radius: 6px;
+}
+
+/* ---- Switch ------------------------------------------------------------------- */
+.switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  border-radius: var(--radius-pill);
+  background: rgba(120, 120, 128, 0.22);
+  cursor: pointer;
+  transition: background-color 260ms ease;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  transition: transform 320ms var(--ease-out), width 200ms var(--ease-out);
+}
+
+.switch:checked {
+  background: var(--accent);
+}
+
+.switch:checked::after {
+  transform: translateX(18px);
+}
+
+.switch:active::after {
+  width: 26px;
+}
+
+.switch:checked:active::after {
+  transform: translateX(14px);
+}
+
+.switch-sm {
+  width: 36px;
+  height: 22px;
+}
+
+.switch-sm::after {
+  width: 18px;
+  height: 18px;
+}
+
+.switch-sm:checked::after {
+  transform: translateX(14px);
+}
+
+.switch-sm:active::after {
+  width: 21px;
+}
+
+.switch-sm:checked:active::after {
+  transform: translateX(11px);
+}
+
+/* ---- Inputs --------------------------------------------------------------------- */
+.input {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-size: 15px;
+  transition: border-color 160ms ease, box-shadow 200ms ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.input[type="number"]::-webkit-inner-spin-button,
+.input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ---- Dialog ------------------------------------------------------------------------ */
+html {
+  scrollbar-gutter: stable;
+}
+
+html:has(.dialog[open]) {
+  overflow: hidden;
+}
+
+.dialog {
+  overscroll-behavior: contain;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-pop);
+  opacity: 0;
+  transform: translateY(14px) scale(0.97);
+  transition: opacity 220ms ease, transform 420ms var(--ease-sheet), overlay 420ms allow-discrete,
+    display 420ms allow-discrete;
+}
+
+.dialog[open] {
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .dialog[open] {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+
+.dialog::backdrop {
+  background: rgba(0, 0, 0, 0);
+  transition: background-color 300ms ease, overlay 300ms allow-discrete, display 300ms allow-discrete;
+}
+
+.dialog[open]::backdrop {
+  background: rgba(0, 0, 0, 0.22);
+}
+
+@starting-style {
+  .dialog[open]::backdrop {
+    background: rgba(0, 0, 0, 0);
+  }
+}
+
+.dialog-card {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+}
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px 4px 24px;
+}
+
+.dialog-head h2 {
+  font-size: 19px;
+}
+
+.dialog-body {
+  padding: 16px 24px 8px;
+  overflow-y: auto;
+}
+
+.dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 20px 24px 24px;
+}
+
+/* ---- Toast ------------------------------------------------------------------------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(28px + env(safe-area-inset-bottom));
+  z-index: 100;
+  max-width: calc(100vw - 32px);
+  padding: 10px 18px 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(29, 29, 31, 0.92);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 16px) scale(0.98);
+  transition: opacity 220ms ease, transform 420ms var(--ease-out);
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.toast-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--green);
+}
+
+.toast-icon .i {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.5;
+}
+
+.toast[data-type="error"] .toast-icon {
+  background: var(--red);
+}
+
+.toast .i-err,
+.toast[data-type="error"] .i-ok {
+  display: none;
+}
+
+.toast[data-type="error"] .i-err {
+  display: block;
+}
+
+/* ---- Code blocks --------------------------------------------------------------------- */
+.code {
+  position: relative;
+  border-radius: 14px;
+  background: var(--surface-sunken);
+}
+
+.code-head {
+  height: 44px;
+  padding: 0 6px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.code-head > .icon-btn {
+  margin-left: auto;
+}
+
+.code pre {
+  margin: 0;
+  padding: 2px 18px 18px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+  tab-size: 2;
+}
+
+.code > .icon-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--surface-sunken);
+}
+
+.code > .icon-btn:hover {
+  background: #e8e8ed;
+}
+
+.code-plain pre {
+  padding-top: 16px;
+  padding-right: 52px;
+}
+
+/* Syntax colors (GitHub light palette, applied by hand in templates). */
+.tk-k {
+  color: #cf222e;
+}
+
+.tk-s {
+  color: #0a3069;
+}
+
+.tk-f {
+  color: #0550ae;
+}
+
+.tk-n {
+  color: #953800;
+}
+
+.tk-c {
+  color: #6e7781;
+}
