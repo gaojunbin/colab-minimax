@@ -328,6 +328,11 @@ async def catch_all_proxy(request: Request, path: str):
             manager.queued_jobs_count = p
             return await proxy_http_request(request, path)
 
+    # Static assets only exist while ComfyUI is running. They skip auth above, so they
+    # must never auto-boot the GPU or receive the console page.
+    if is_static_asset:
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+
     # 3. Instance is not ready!
     # If this is a programmatic ComfyUI API call (e.g., POST /prompt or GET /history), auto-boot and wait!
     is_browser_nav = "text/html" in request.headers.get("accept", "") and request.method == "GET"
