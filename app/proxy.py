@@ -29,55 +29,180 @@ HOP_BY_HOP_HEADERS = {
 FLOATING_WIDGET_INJECTION = """
 <!-- Colab MiniMax H3 Lifecycle Floating Widget -->
 <style>
+  @keyframes cmh3-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes cmh3-pop {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+  }
   #cmh3-floating-bar {
     position: fixed;
     bottom: 14px;
     left: 14px;
     z-index: 999999;
-    background: rgba(15, 23, 42, 0.92);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(99, 102, 241, 0.45);
-    border-radius: 999px;
-    padding: 6px 14px;
-    color: #e2e8f0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 12px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    gap: 2px;
+    padding: 4px 4px 4px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(28, 28, 30, 0.78);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+    color: rgba(255, 255, 255, 0.92);
+    font: 500 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
     user-select: none;
+    animation: cmh3-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  #cmh3-floating-bar .cmh3-dot {
+  #cmh3-dot {
     width: 8px;
     height: 8px;
+    flex-shrink: 0;
     border-radius: 50%;
-    background: #10b981;
-    box-shadow: 0 0 8px #10b981;
+    background: #34c759;
+    box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.22);
   }
-  #cmh3-floating-bar a, #cmh3-floating-bar button {
-    color: #a5b4fc;
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
+  #cmh3-info {
+    margin: 0 6px 0 8px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  #cmh3-floating-bar .cmh3-sep {
+    width: 1px;
+    height: 14px;
+    margin: 0 4px;
+    background: rgba(255, 255, 255, 0.14);
+  }
+  #cmh3-floating-bar a,
+  #cmh3-floating-bar button {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    padding: 0 11px;
     border-radius: 999px;
-    padding: 2px 9px;
-    font-size: 11px;
-    text-decoration: none;
+    color: rgba(255, 255, 255, 0.86);
+    font: inherit;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background-color 150ms ease, color 150ms ease;
   }
-  #cmh3-floating-bar a:hover, #cmh3-floating-bar button:hover {
-    background: rgba(99, 102, 241, 0.35);
+  #cmh3-floating-bar a:hover,
+  #cmh3-floating-bar button:hover {
+    background: rgba(255, 255, 255, 0.1);
     color: #fff;
+  }
+  #cmh3-floating-bar a:focus-visible,
+  #cmh3-floating-bar button:focus-visible {
+    outline: 2px solid #0a84ff;
+    outline-offset: 1px;
+  }
+  #cmh3-floating-bar svg {
+    display: block;
+    width: 12px;
+    height: 12px;
+  }
+  #cmh3-floating-bar #cmh3-stop-btn {
+    color: #ff6961;
+  }
+  #cmh3-floating-bar #cmh3-stop-btn:hover {
+    background: rgba(255, 69, 58, 0.16);
+    color: #ff453a;
+  }
+  #cmh3-confirm {
+    width: min(380px, calc(100vw - 32px));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 20px;
+    background: #fff;
+    color: #1d1d1f;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+    font: 400 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  #cmh3-confirm[open] {
+    animation: cmh3-pop 360ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  #cmh3-confirm::backdrop {
+    background: rgba(0, 0, 0, 0.45);
+  }
+  #cmh3-confirm form {
+    margin: 0;
+    padding: 26px 24px 22px;
+  }
+  #cmh3-confirm h2 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: #1d1d1f;
+  }
+  #cmh3-confirm p {
+    margin: 8px 0 0;
+    font-size: 15px;
+    color: #6e6e73;
+  }
+  #cmh3-confirm .cmh3-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 22px;
+  }
+  #cmh3-confirm button {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #1d1d1f;
+    font: 500 15px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    cursor: pointer;
+    transition: background-color 150ms ease, transform 150ms ease;
+  }
+  #cmh3-confirm button:hover {
+    background: rgba(0, 0, 0, 0.08);
+  }
+  #cmh3-confirm button:active {
+    transform: scale(0.97);
+  }
+  #cmh3-confirm button:focus-visible {
+    outline: 2px solid #0071e3;
+    outline-offset: 2px;
+  }
+  #cmh3-confirm .cmh3-danger {
+    background: #d70015;
+    color: #fff;
+  }
+  #cmh3-confirm .cmh3-danger:hover {
+    background: #b8000f;
   }
 </style>
 <div id="cmh3-floating-bar">
-  <span class="cmh3-dot" id="cmh3-dot"></span>
-  <span id="cmh3-info">Colab GPU 运行中</span>
-  <a href="/_control/dashboard" target="_blank">控制面板 & API</a>
-  <button id="cmh3-sync-btn" onclick="window.__cmh3Sync()">同步结果</button>
-  <button id="cmh3-stop-btn" style="color:#fca5a5;border-color:rgba(239,68,68,0.35);background:rgba(239,68,68,0.15)" onclick="window.__cmh3Stop()">释放实例</button>
+  <span id="cmh3-dot"></span>
+  <span id="cmh3-info">GPU 运行中</span>
+  <span class="cmh3-sep"></span>
+  <a href="/_control/dashboard" target="_blank">控制台<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></a>
+  <button id="cmh3-sync-btn" type="button" onclick="window.__cmh3Sync()">同步</button>
+  <button id="cmh3-stop-btn" type="button" onclick="window.__cmh3Stop()">释放</button>
 </div>
+<dialog id="cmh3-confirm">
+  <form method="dialog">
+    <h2>释放 GPU 实例？</h2>
+    <p>生成结果会先同步到 Google Drive，随后释放实例并停止消耗算力。</p>
+    <div class="cmh3-actions">
+      <button value="cancel">取消</button>
+      <button class="cmh3-danger" value="confirm">释放</button>
+    </div>
+  </form>
+</dialog>
 <script>
 (function(){
   async function pollStatus() {
@@ -89,23 +214,38 @@ FLOATING_WIDGET_INJECTION = """
         window.location.href = '/_control/dashboard';
         return;
       }
-      const mins = Math.floor(d.remaining_idle_seconds / 60);
-      const secs = d.remaining_idle_seconds % 60;
-      const busy = (d.running_jobs > 0 || d.queued_jobs > 0) ? `任务运行中(${d.running_jobs}/${d.queued_jobs})` : `闲置倒计时 ${mins}m${secs}s`;
-      document.getElementById('cmh3-info').textContent = `Colab ${d.active_gpu} · ${busy}`;
+      const busy = d.running_jobs > 0 || d.queued_jobs > 0;
+      const secs = d.remaining_idle_seconds;
+      const idle = secs >= 60 ? `${Math.ceil(secs / 60)} 分钟后闲置释放` : '即将闲置释放';
+      document.getElementById('cmh3-info').textContent = busy
+        ? `${d.active_gpu} · 运行 ${d.running_jobs} · 排队 ${d.queued_jobs}`
+        : `${d.active_gpu} · ${idle}`;
     } catch(e) {}
+  }
+  function confirmStop() {
+    const dlg = document.getElementById('cmh3-confirm');
+    if (!dlg || typeof dlg.showModal !== 'function') {
+      return Promise.resolve(confirm('确定要保存当前生成结果并立即释放 Colab GPU 实例吗？'));
+    }
+    return new Promise(function(resolve) {
+      dlg.returnValue = '';
+      dlg.addEventListener('close', function() { resolve(dlg.returnValue === 'confirm'); }, { once: true });
+      dlg.showModal();
+    });
   }
   window.__cmh3Sync = async function() {
     const btn = document.getElementById('cmh3-sync-btn');
-    btn.textContent = '同步中...';
+    btn.textContent = '同步中…';
     try {
       await fetch('/api/v1/instance/sync', {method: 'POST'});
-      btn.textContent = '已同步!';
-      setTimeout(() => btn.textContent = '同步结果', 2000);
-    } catch(e) { btn.textContent = '同步结果'; }
+      btn.textContent = '已同步';
+      setTimeout(() => btn.textContent = '同步', 2000);
+    } catch(e) { btn.textContent = '同步'; }
   };
   window.__cmh3Stop = async function() {
-    if (!confirm('确定要保存当前生成结果并立即释放 Colab GPU 实例吗？')) return;
+    if (!(await confirmStop())) return;
+    const btn = document.getElementById('cmh3-stop-btn');
+    btn.textContent = '释放中…';
     await fetch('/api/v1/instance/stop', {method: 'POST'});
     window.location.href = '/_control/dashboard';
   };
