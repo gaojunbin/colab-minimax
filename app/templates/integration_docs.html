@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API 与 MCP 接入文档 · MiniMax H3 (ComfyUI) 云端按需网关</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at top right, #1e1b4b, #0f172a 55%, #020617);
+      min-height: 100vh;
+    }
+    .tab-active {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      color: #ffffff;
+      box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.45);
+    }
+  </style>
+</head>
+<body class="text-slate-100 p-4 md:p-8">
+  <div class="max-w-6xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900/85 backdrop-blur-xl border border-slate-800/90 rounded-2xl p-5 shadow-2xl">
+      <div class="flex items-center gap-3.5">
+        <a href="/_control/dashboard" class="w-11 h-11 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 font-bold text-lg hover:bg-indigo-600/30 transition">
+          H3
+        </a>
+        <div>
+          <div class="flex items-center gap-2.5">
+            <h1 class="text-lg font-bold text-white">MiniMax H3 · REST API 与 MCP Server 接入指南</h1>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              v1.1
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mt-0.5">
+            支持 Claude Code / Cursor / Cherry Studio 等大模型 MCP 直接调用 · 支持外部业务系统 REST API 按需生成视频
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <a
+          href="/_control/dashboard"
+          class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition flex items-center gap-1.5"
+        >
+          ← 返回控制台面板
+        </a>
+        <a
+          href="/docs"
+          target="_blank"
+          class="px-4 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-semibold transition"
+        >
+          Swagger 交互调试 (/docs) ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- Credentials Banner -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] text-slate-400">当前网关服务地址</div>
+          <div id="origin-display" class="text-xs font-mono font-semibold text-white mt-1">http://127.0.0.1:{{ port }}</div>
+        </div>
+        <button onclick="copyText(document.getElementById('origin-display').textContent, this)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition">
+          复制
+        </button>
+      </div>
+
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] text-slate-400">认证密钥 (API Key / MCP Key)</div>
+          <div class="text-xs font-mono font-semibold text-emerald-400 mt-1">{{ api_key }}</div>
+        </div>
+        <button onclick="copyText('{{ api_key }}', this)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition">
+          复制
+        </button>
+      </div>
+
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] text-slate-400">Google Drive 云端输出路径</div>
+          <div class="text-xs font-mono font-semibold text-indigo-300 mt-1 truncate" title="{{ drive_base_dir }}/outputs">{{ drive_base_dir }}/outputs</div>
+        </div>
+        <a href="https://drive.google.com/drive/my-drive" target="_blank" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 text-[11px] text-indigo-300 transition shrink-0">
+          打开云盘 ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- Tab Switcher -->
+    <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-800 p-1.5 rounded-2xl w-fit">
+      <button id="tab-btn-mcp" onclick="switchTab('mcp')" class="tab-active px-5 py-2.5 rounded-xl text-xs font-semibold transition flex items-center gap-2">
+        <span>🔌 MCP Server 接入文档 (Claude Code / LLM)</span>
+      </button>
+      <button id="tab-btn-api" onclick="switchTab('api')" class="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center gap-2">
+        <span>⚡ REST API 接口文档 (外部项目调用)</span>
+      </button>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- TAB 1: MCP SERVER DOCUMENTATION                                    -->
+    <!-- ================================================================== -->
+    <div id="tab-panel-mcp" class="space-y-6">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-5">
+        <div>
+          <h2 class="text-base font-bold text-white">1. 快速接入 Claude Code (CLI)</h2>
+          <p class="text-xs text-slate-400 mt-1">
+            无论您的 Claude Code 运行在您个人电脑（远程接入），还是运行在当前服务器本机，均可通过一行命令完成绑定：
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Remote HTTP MCP -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-indigo-300">方式 A：在您本地电脑远程接入 (Streamable HTTP)</span>
+              <button onclick="copyCode('cmd-claude-http', this)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition">复制命令</button>
+            </div>
+            <p class="text-[11px] text-slate-400">适合在您自己的 Mac / Windows / Linux 终端中连接本服务器：</p>
+            <pre id="cmd-claude-http" class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 text-[11px] font-mono text-slate-200 overflow-x-auto">claude mcp add --transport http --scope user minimax-h3 \
+  "<span class="dyn-origin">http://127.0.0.1:{{ port }}</span>/mcp" \
+  --header "X-API-Key: {{ api_key }}"</pre>
+          </div>
+
+          <!-- Local Stdio MCP -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-emerald-300">方式 B：在当前服务器本机接入 (Stdio 进程模式)</span>
+              <button onclick="copyCode('cmd-claude-stdio', this)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition">复制命令</button>
+            </div>
+            <p class="text-[11px] text-slate-400">直接调用宿主机零依赖脚本 <code>/root/colab-minimax/mcp_server.py</code>：</p>
+            <pre id="cmd-claude-stdio" class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 text-[11px] font-mono text-slate-200 overflow-x-auto">claude mcp add --transport stdio --scope user minimax-h3 \
+  --env MINIMAX_GATEWAY_URL=http://127.0.0.1:{{ port }} \
+  --env MINIMAX_API_KEY={{ api_key }} \
+  -- python3 /root/colab-minimax/mcp_server.py</pre>
+          </div>
+        </div>
+
+        <!-- JSON Configuration for Cursor / Claude Desktop / Cherry Studio -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-200">通用 JSON 配置 (HTTP / SSE 远程模式)</span>
+              <button onclick="copyCode('json-mcp-http', this)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition">复制配置</button>
+            </div>
+            <p class="text-[11px] text-slate-400">适用于 <code>~/.claude.json</code>、Cursor、Cherry Studio、Dify 等客户端（同时支持 <code>/mcp</code> Streamable HTTP 与 <code>/mcp/sse</code>）：</p>
+            <pre id="json-mcp-http" class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 text-[11px] font-mono text-slate-200 overflow-x-auto">{
+  "mcpServers": {
+    "minimax-h3": {
+      "type": "http",
+      "url": "<span class="dyn-origin">http://127.0.0.1:{{ port }}</span>/mcp",
+      "headers": {
+        "X-API-Key": "{{ api_key }}"
+      }
+    }
+  }
+}</pre>
+          </div>
+
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-slate-200">通用 JSON 配置 (Stdio 本地脚本模式)</span>
+              <button onclick="copyCode('json-mcp-stdio', this)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition">复制配置</button>
+            </div>
+            <p class="text-[11px] text-slate-400">适用于本机 Claude Desktop / Antigravity / Cline 等支持 Stdio 的客户端：</p>
+            <pre id="json-mcp-stdio" class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 text-[11px] font-mono text-slate-200 overflow-x-auto">{
+  "mcpServers": {
+    "minimax-h3": {
+      "command": "python3",
+      "args": ["/root/colab-minimax/mcp_server.py"],
+      "env": {
+        "MINIMAX_GATEWAY_URL": "http://127.0.0.1:{{ port }}",
+        "MINIMAX_API_KEY": "{{ api_key }}"
+      }
+    }
+  }
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- MCP Tools Reference Table -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <div>
+          <h2 class="text-base font-bold text-white">2. MCP 工具列表 (8 个内置 Tools)</h2>
+          <p class="text-xs text-slate-400 mt-1">接入后，您可以直接用自然语言让大模型执行以下操作：</p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th class="py-3 px-4 font-semibold">工具名称 (Tool Name)</th>
+                <th class="py-3 px-4 font-semibold">主要参数</th>
+                <th class="py-3 px-4 font-semibold">功能说明</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/70 text-slate-300">
+              <tr>
+                <td class="py-3 px-4 font-mono text-indigo-300 font-semibold">generate_video</td>
+                <td class="py-3 px-4 font-mono text-[11px] text-slate-400">prompt, width, height, duration, turbo_mode, steps, text_encoder, first_frame_image, last_frame_image, wait</td>
+                <td class="py-3 px-4">全自动唤醒 Colab GPU 并使用 MiniMax H3 生成音视频同步的 MP4，直接保存在 Google Drive <code>outputs/</code> 目录。</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-mono text-indigo-300 font-semibold">get_video_task_status</td>
+                <td class="py-3 px-4 font-mono text-[11px] text-slate-400">task_id</td>
+                <td class="py-3 px-4">根据任务 ID 查询生成进度、状态及 Google Drive 文件路径 (<code>drive_file_paths</code>)。</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-mono text-indigo-300 font-semibold">list_video_tasks</td>
+                <td class="py-3 px-4 font-mono text-[11px] text-slate-400">limit (默认 10)</td>
+                <td class="py-3 px-4">列出最近的视频生成任务记录及状态。</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-mono text-indigo-300 font-semibold">list_generated_outputs</td>
+                <td class="py-3 px-4 font-mono text-[11px] text-slate-400">limit (默认 20)</td>
+                <td class="py-3 px-4">列出已保存在 Google Drive 云盘中的所有生成视频清单（含云盘路径、大小、生成时间）。</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-mono text-emerald-300 font-semibold">get_instance_status</td>
+                <td class="py-3 px-4 font-mono text-[11px] text-slate-400">无</td>
+                <td class="py-3 px-4">查询当前 Colab GPU 实例状态、GPU 型号、队列任务数、闲置倒计时、Colab 算力余额及日志。</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-mono text-emerald-300 font-semibold">wake_up_instance</td>
+                <td class="py-3 px-4 font-mono text-[11px] text-slate-400">gpu ("L4"|"A100"|"T4"), wait</td>
+                <td class="py-3 px-4">主动申请并预热启动 Colab GPU 实例与 ComfyUI 环境。</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-mono text-rose-300 font-semibold">stop_instance</td>
+                <td class="py-3 px-4 font-mono text-[11px] text-slate-400">无</td>
+                <td class="py-3 px-4">确保生成结果同步落盘至 Google Drive 后，立即释放 Colab GPU 实例以停止消耗算力。</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-mono text-amber-300 font-semibold">sync_outputs</td>
+                <td class="py-3 px-4 font-mono text-[11px] text-slate-400">无</td>
+                <td class="py-3 px-4">手动触发远端输出目录与 Google Drive 云盘的同步刷新并更新输出索引。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- TAB 2: REST API DOCUMENTATION                                      -->
+    <!-- ================================================================== -->
+    <div id="tab-panel-api" class="hidden space-y-6">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-5">
+        <div>
+          <h2 class="text-base font-bold text-white">1. 视频生成接口 (<code class="text-indigo-300">POST /api/v1/video/generate</code>)</h2>
+          <p class="text-xs text-slate-400 mt-1">
+            外部业务系统调用此接口时无需关心 Colab 实例是否在线。若实例已释放，网关会自动完成「申请 GPU → 免交互挂载云盘 → 秒级软链模型 → 生成音视频 → 存入 Google Drive」全流程。
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-indigo-300">cURL 调用示例 (文生音视频 T2V)</span>
+              <button onclick="copyCode('curl-api-t2v', this)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition">复制代码</button>
+            </div>
+            <pre id="curl-api-t2v" class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 text-[11px] font-mono text-slate-200 overflow-x-auto">curl -X POST "<span class="dyn-origin">http://127.0.0.1:{{ port }}</span>/api/v1/video/generate" \
+  -H "X-API-Key: {{ api_key }}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Realistic cinematic sci-fi metropolis at dusk, flying cars, rain reflections, stereo synth music and thunder audio.",
+    "width": 864,
+    "height": 480,
+    "duration": 5.0,
+    "turbo_mode": true,
+    "steps": 8,
+    "text_encoder": "heretic",
+    "wait": true
+  }'</pre>
+          </div>
+
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-emerald-300">Python 调用示例 (支持图生视频 I2V / 首尾帧 FL2V)</span>
+              <button onclick="copyCode('py-api-i2v', this)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 transition">复制代码</button>
+            </div>
+            <pre id="py-api-i2v" class="bg-slate-900/90 border border-slate-800 rounded-lg p-3 text-[11px] font-mono text-slate-200 overflow-x-auto">import requests
+
+resp = requests.post(
+    "<span class="dyn-origin">http://127.0.0.1:{{ port }}</span>/api/v1/video/generate",
+    headers={"X-API-Key": "{{ api_key }}"},
+    json={
+        "prompt": "Camera orbits smoothly around the subject with ambient sound effects.",
+        "width": 864,
+        "height": 480,
+        "duration": 5.0,
+        "turbo_mode": True,
+        "text_encoder": "heretic",
+        "first_frame_image": "https://example.com/start.png",  # 可选：URL 或 Base64
+        "wait": True,
+    },
+    timeout=1800,
+)
+print(resp.json())</pre>
+          </div>
+        </div>
+
+        <!-- Request Parameters Table -->
+        <div class="overflow-x-auto pt-2">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th class="py-2.5 px-4">字段名</th>
+                <th class="py-2.5 px-4">类型</th>
+                <th class="py-2.5 px-4">默认值</th>
+                <th class="py-2.5 px-4">说明</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/70 text-slate-300">
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-indigo-300">prompt *</td>
+                <td class="py-2.5 px-4 font-mono text-slate-400">string</td>
+                <td class="py-2.5 px-4 text-slate-500">必填</td>
+                <td class="py-2.5 px-4">画面描述、镜头运动及伴随立体声（台词/音效/配乐）提示词</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-indigo-300">width / height</td>
+                <td class="py-2.5 px-4 font-mono text-slate-400">int</td>
+                <td class="py-2.5 px-4 font-mono">1344 / 768</td>
+                <td class="py-2.5 px-4">视频宽高（自动对齐 32 的倍数，常用 <code>864x480</code> 或 <code>1344x768</code>）</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-indigo-300">duration</td>
+                <td class="py-2.5 px-4 font-mono text-slate-400">float</td>
+                <td class="py-2.5 px-4 font-mono">5.0</td>
+                <td class="py-2.5 px-4">视频时长（秒，支持 2.0 ~ 15.0 秒，24fps）</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-indigo-300">text_encoder</td>
+                <td class="py-2.5 px-4 font-mono text-slate-400">string</td>
+                <td class="py-2.5 px-4 font-mono">"heretic"</td>
+                <td class="py-2.5 px-4"><code>"heretic"</code> (Momoking Heretic NVFP4) 或 <code>"official"</code> (官方 AWQ)</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-indigo-300">turbo_mode / steps</td>
+                <td class="py-2.5 px-4 font-mono text-slate-400">bool / int</td>
+                <td class="py-2.5 px-4 font-mono">true / 8</td>
+                <td class="py-2.5 px-4">启用 Turbo LoRA 加速（支持 8 步或 4 步极速生成）</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-indigo-300">first_frame_image / last_frame_image</td>
+                <td class="py-2.5 px-4 font-mono text-slate-400">string</td>
+                <td class="py-2.5 px-4 font-mono">null</td>
+                <td class="py-2.5 px-4">可选首帧/尾帧图片（支持图片 HTTP URL 或 Base64 字符串）</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-indigo-300">wait</td>
+                <td class="py-2.5 px-4 font-mono text-slate-400">bool</td>
+                <td class="py-2.5 px-4 font-mono">true</td>
+                <td class="py-2.5 px-4"><code>true</code> 同步等待生成完成返回；<code>false</code> 立即返回 <code>task_id</code> 供轮询</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Other Lifecycle & Task Endpoints -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+        <h2 class="text-base font-bold text-white">2. 任务查询与实例生命周期管理端点</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th class="py-2.5 px-4">方法与路径</th>
+                <th class="py-2.5 px-4">说明</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/70 text-slate-300">
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-emerald-300">GET /api/v1/video/tasks/{task_id}</td>
+                <td class="py-2.5 px-4">查询指定视频生成任务状态、进度描述及输出文件在 Google Drive 中的路径</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-emerald-300">GET /api/v1/outputs</td>
+                <td class="py-2.5 px-4">获取 Google Drive 云盘中所有已生成的视频/音频文件清单</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-emerald-300">GET /api/v1/instance/status</td>
+                <td class="py-2.5 px-4">查询当前 Colab GPU 实例阶段、进度百分比、算力余额及运行日志</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-indigo-300">POST /api/v1/instance/start?gpu=L4</td>
+                <td class="py-2.5 px-4">主动触发唤醒或创建 Colab GPU 实例</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-4 font-mono text-rose-300">POST /api/v1/instance/stop</td>
+                <td class="py-2.5 px-4">刷新同步输出到 Google Drive 并立即释放 Colab GPU 实例</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Populate current origin dynamically
+    const currentOrigin = window.location.origin;
+    document.getElementById('origin-display').textContent = currentOrigin;
+    document.querySelectorAll('.dyn-origin').forEach(el => {
+      el.textContent = currentOrigin;
+    });
+
+    function switchTab(tab) {
+      const mcpBtn = document.getElementById('tab-btn-mcp');
+      const apiBtn = document.getElementById('tab-btn-api');
+      const mcpPanel = document.getElementById('tab-panel-mcp');
+      const apiPanel = document.getElementById('tab-panel-api');
+
+      if (tab === 'mcp') {
+        mcpBtn.classList.add('tab-active');
+        mcpBtn.classList.remove('text-slate-400');
+        apiBtn.classList.remove('tab-active');
+        apiBtn.classList.add('text-slate-400');
+        mcpPanel.classList.remove('hidden');
+        apiPanel.classList.add('hidden');
+      } else {
+        apiBtn.classList.add('tab-active');
+        apiBtn.classList.remove('text-slate-400');
+        mcpBtn.classList.remove('tab-active');
+        mcpBtn.classList.add('text-slate-400');
+        apiPanel.classList.remove('hidden');
+        mcpPanel.classList.add('hidden');
+      }
+    }
+
+    function copyText(text, btn) {
+      navigator.clipboard.writeText(text);
+      const old = btn.textContent;
+      btn.textContent = '已复制 ✓';
+      btn.classList.add('text-emerald-400');
+      setTimeout(() => {
+        btn.textContent = old;
+        btn.classList.remove('text-emerald-400');
+      }, 1500);
+    }
+
+    function copyCode(id, btn) {
+      const text = document.getElementById(id).innerText;
+      copyText(text, btn);
+    }
+
+    if (window.location.hash === '#api') {
+      switchTab('api');
+    }
+  </script>
+</body>
+</html>

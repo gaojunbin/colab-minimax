@@ -1,0 +1,21 @@
+services:
+  colab-minimax:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: colab-minimax-gateway
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8188}:8188"
+    env_file:
+      - .env
+    volumes:
+      # Persist local outputs, task records, and SSH keys
+      - ./data:/app/data
+      # Mount host colab-cli configuration & OAuth2 refresh token so the container shares host login
+      - /root/.config/colab-cli:/root/.config/colab-cli
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8188/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

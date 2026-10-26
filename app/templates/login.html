@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>登录 · MiniMax H3 (ComfyUI) 云端按需网关</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at top right, #1e1b4b, #0f172a 60%, #020617);
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body class="text-slate-100 flex items-center justify-center p-4">
+  <div class="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-indigo-500/30 rounded-2xl shadow-2xl p-8">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-11 h-11 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 font-bold text-lg">
+        H3
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-white tracking-tight">MiniMax H3 · ComfyUI</h1>
+        <p class="text-xs text-slate-400">Google Colab GPU 按需弹性算力网关</p>
+      </div>
+    </div>
+
+    <div class="mb-6 p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs text-slate-300 leading-relaxed">
+      登录后系统会自动检查云端 Colab GPU 实例状态：若已就绪将直达 ComfyUI；若已休眠则自动申请 GPU、挂载云盘并部署启动 MiniMax H3。
+    </div>
+
+    {% if error %}
+    <div class="mb-4 p-3 rounded-lg bg-red-500/15 border border-red-500/40 text-red-300 text-xs">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/_control/login" class="space-y-4">
+      <input type="hidden" name="next" value="{{ next_url or '/' }}" />
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1.5">管理员账号</label>
+        <input
+          type="text"
+          name="username"
+          value="admin"
+          required
+          class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+        />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1.5">登录密码</label>
+        <input
+          type="password"
+          name="password"
+          placeholder="请输入密码 (默认见 .env)"
+          required
+          autofocus
+          class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700 text-sm text-white focus:outline-none focus:border-indigo-500"
+        />
+      </div>
+      <button
+        type="submit"
+        class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition shadow-lg shadow-indigo-600/30"
+      >
+        登录并进入工作台
+      </button>
+    </form>
+  </div>
+</body>
+</html>
