@@ -58,7 +58,19 @@
         <a class="btn btn-primary" id="enter-btn" href="/?direct=1" hidden>
           进入 ComfyUI<svg class="i arrow"><use href="#i-arrow-right"/></svg>
         </a>
-        <button class="btn btn-primary" id="start-btn" type="button" hidden>启动实例</button>
+        <div class="split" id="start-group" hidden>
+          <button class="btn btn-primary split-main" id="start-btn" type="button">启动实例</button>
+          <label class="btn btn-primary split-pick" title="本次启动使用的 GPU">
+            <span id="gpu-pick-label">L4</span>
+            <svg class="i"><use href="#i-chevron-down"/></svg>
+            <select id="gpu-pick" aria-label="本次启动使用的 GPU">
+              <option value="L4">L4</option>
+              <option value="A100">A100</option>
+              <option value="H100">H100</option>
+              <option value="T4">T4</option>
+            </select>
+          </label>
+        </div>
         <button class="btn btn-secondary" id="stop-btn" type="button" hidden>释放实例</button>
         <label class="auto-jump" id="auto-jump" hidden>
           <input class="switch switch-sm" type="checkbox" id="auto-jump-toggle" checked />

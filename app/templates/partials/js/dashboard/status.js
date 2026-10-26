@@ -8,6 +8,7 @@ const hero = {
   bootPanel: $('#boot-panel'),
   steps: $$('#steps .step'),
   enterBtn: $('#enter-btn'),
+  startGroup: $('#start-group'),
   startBtn: $('#start-btn'),
   stopBtn: $('#stop-btn'),
   autoJump: $('#auto-jump'),
@@ -92,7 +93,7 @@ function renderProgress(view, progress) {
 function renderActions(view) {
   const { mode } = view;
   reveal(hero.enterBtn, mode === 'ready');
-  reveal(hero.startBtn, mode === 'stopped' || mode === 'error');
+  reveal(hero.startGroup, mode === 'stopped' || mode === 'error');
   hero.startBtn.textContent = mode === 'error' ? '重新启动' : '启动实例';
   reveal(hero.stopBtn, mode !== 'stopped');
   setLoading(hero.stopBtn, mode === 'stopping' || stopPending);

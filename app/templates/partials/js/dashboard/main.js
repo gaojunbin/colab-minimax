@@ -4,10 +4,34 @@ let statusInFlight = false;
 let statusQueued = false;
 let pollTimer = null;
 
+// One-off GPU picker next to the start button. It follows the saved default
+// GPU and keeps a manual pick until the default itself changes.
+const gpuPick = { select: $('#gpu-pick'), label: $('#gpu-pick-label'), defaultGpu: null };
+
+function syncGpuPick(defaultGpu) {
+  if (!defaultGpu || defaultGpu === gpuPick.defaultGpu) return;
+  gpuPick.defaultGpu = defaultGpu;
+  if (!Array.from(gpuPick.select.options).some((option) => option.value === defaultGpu)) {
+    gpuPick.select.add(new Option(defaultGpu, defaultGpu));
+  }
+  Array.from(gpuPick.select.options).forEach((option) => {
+    option.textContent = option.value === defaultGpu ? `${option.value}（默认）` : option.value;
+  });
+  gpuPick.select.value = defaultGpu;
+  gpuPick.label.textContent = defaultGpu;
+}
+
+gpuPick.select.addEventListener('change', () => {
+  gpuPick.label.textContent = gpuPick.select.value;
+});
+
 function applyStatus(d) {
   const prevPhase = state.phase;
   state.phase = d.phase;
-  if (d.settings) state.settings = d.settings;
+  if (d.settings) {
+    state.settings = d.settings;
+    syncGpuPick(d.settings.default_gpu);
+  }
 
   const view = renderHero(d);
   renderStats(d, view);
@@ -76,7 +100,7 @@ function confirmAction({ title, message, confirmText }) {
 }
 
 async function startInstance() {
-  const gpu = (state.settings && state.settings.default_gpu) || 'L4';
+  const gpu = gpuPick.select.value || (state.settings && state.settings.default_gpu) || 'L4';
   setLoading(hero.startBtn, true);
   try {
     const resp = await api(`/api/v1/instance/start?gpu=${encodeURIComponent(gpu)}`, { method: 'POST' });
