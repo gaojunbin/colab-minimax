@@ -1,0 +1,91 @@
+/* Login page: a single centered card. */
+.auth {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px 16px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(1200px 640px at 50% -12%, #ffffff 0%, rgba(255, 255, 255, 0) 62%);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 40px 32px 32px;
+}
+
+.auth-brand {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.auth-brand .brand-mark {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 18px;
+  border-radius: 15px;
+  font-size: 17px;
+}
+
+.auth-brand h1 {
+  font-size: 24px;
+  letter-spacing: -0.025em;
+}
+
+.auth-brand p {
+  margin-top: 4px;
+  font-size: 15px;
+  color: var(--text-2);
+}
+
+.auth-error {
+  margin-top: 24px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--red-soft);
+  color: var(--red-text);
+  font-size: 14px;
+  text-align: center;
+  animation: shake 420ms var(--ease-out);
+}
+
+@keyframes shake {
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+.auth-form {
+  margin-top: 28px;
+  display: grid;
+  gap: 16px;
+}
+
+.auth-field span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.auth-field .input {
+  width: 100%;
+  height: 44px;
+}
+
+.auth-submit {
+  width: 100%;
+  height: 44px;
+  margin-top: 8px;
+}

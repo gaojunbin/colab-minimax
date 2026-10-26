@@ -1,694 +1,236 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>控制台 · MiniMax H3 (ComfyUI) Colab 自动生命周期网关</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      background: radial-gradient(circle at top right, #1e1b4b, #0f172a 55%, #020617);
-      min-height: 100vh;
-    }
-    .step-active {
-      border-color: #6366f1;
-      background: rgba(99, 102, 241, 0.16);
-      box-shadow: 0 0 20px -5px rgba(99, 102, 241, 0.35);
-    }
-    .step-done {
-      border-color: #10b981;
-      background: rgba(16, 185, 129, 0.12);
-    }
-    .gpu-card {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .gpu-card-active {
-      border-color: #6366f1 !important;
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(79, 70, 229, 0.08)) !important;
-      box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4), 0 8px 20px -6px rgba(99, 102, 241, 0.35);
-    }
-    .preset-pill-active {
-      background: rgba(99, 102, 241, 0.25) !important;
-      border-color: #6366f1 !important;
-      color: #e0e7ff !important;
-    }
-  </style>
-</head>
-<body class="text-slate-100 p-4 md:p-8">
-  <!-- Toast Notification -->
-  <div id="toast" class="fixed top-5 right-5 z-50 hidden transform transition-all duration-300 px-4 py-3 rounded-xl bg-slate-900/95 border border-indigo-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2.5">
-    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-    <span id="toast-text">操作成功</span>
-  </div>
+{% extends "base.html" %}
+{% set active_nav = 'dashboard' %}
 
-  <div class="max-w-6xl mx-auto space-y-6">
-    <!-- Top Header -->
-    <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900/85 backdrop-blur-xl border border-slate-800/90 rounded-2xl p-5 shadow-2xl">
-      <div class="flex items-center gap-3.5">
-        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500/30 to-purple-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-lg shadow-inner">
-          H3
-        </div>
-        <div>
-          <div class="flex items-center gap-2.5">
-            <h1 class="text-lg font-bold text-white">MiniMax H3 (ComfyUI) 云端按需控制台</h1>
-            <span id="phase-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-              检查中...
-            </span>
-          </div>
-          <p class="text-xs text-slate-400 mt-0.5">
-            打开即自动唤醒 GPU · Google Drive 云盘模型秒级软链与视频直存 · 支持 REST API 与 MCP Server 调用
-          </p>
-        </div>
-      </div>
+{% block title %}控制台 · MiniMax H3{% endblock %}
 
-      <div class="flex flex-wrap items-center gap-2.5">
-        <a
-          id="enter-comfy-btn"
-          href="/?direct=1"
-          class="hidden px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-semibold transition shadow-lg shadow-emerald-600/25"
-        >
-          进入 ComfyUI 工作台 →
-        </a>
-        <a
-          href="/_control/integration"
-          class="px-3.5 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/35 text-indigo-300 text-xs font-semibold transition flex items-center gap-1.5"
-        >
-          <span>🔌 API & MCP 接入文档</span>
-        </a>
-        <button
-          id="boot-btn"
-          onclick="startInstance()"
-          class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-[0.98] text-white text-xs font-semibold transition shadow-lg shadow-indigo-600/30"
-        >
-          立即唤醒 / 启动实例
+{% block styles %}
+{% include "partials/css/dashboard.css" %}
+{% endblock %}
+
+{% block nav_actions %}
+        <button class="icon-btn" id="open-settings" type="button" aria-label="设置" title="设置">
+          <svg class="i"><use href="#i-settings"/></svg>
         </button>
-        <button
-          id="stop-btn"
-          onclick="stopInstance()"
-          class="px-3.5 py-2 rounded-xl bg-rose-600/15 hover:bg-rose-600/25 active:scale-[0.98] border border-rose-500/35 text-rose-300 text-xs font-medium transition"
-        >
-          同步云盘并释放实例
+{% endblock %}
+
+{% block content %}
+<main class="page">
+  <section class="notice" id="drive-auth" hidden>
+    <svg class="i"><use href="#i-warning"/></svg>
+    <div>
+      <h2>需要授权 Google Drive</h2>
+      <p>挂载云盘需要一次浏览器授权。完成授权后，回到这里继续挂载。</p>
+      <div class="notice-actions">
+        <a class="btn btn-primary btn-sm" id="drive-auth-link" href="#" target="_blank" rel="noopener">
+          打开授权页<svg class="i"><use href="#i-external"/></svg>
+        </a>
+        <button class="btn btn-secondary btn-sm" id="drive-auth-done" type="button">我已完成授权</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card hero reveal" id="hero" data-tone="gray" style="--i: 0">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-body">
+      <div class="hero-top">
+        <div class="hero-heading">
+          <span class="dot" id="hero-dot"></span>
+          <h1 class="hero-title" id="hero-title" aria-live="polite">正在获取状态</h1>
+        </div>
+        <span class="hero-percent num" id="hero-percent" hidden>0%</span>
+      </div>
+      <p class="hero-sub" id="hero-sub"></p>
+
+      <div class="collapse" id="boot-panel">
+        <div class="collapse-inner">
+          <ol class="steps" id="steps" aria-label="启动进度">
+            <li class="step" data-phase="ALLOCATING_VM" data-title="正在申请 GPU"><span class="step-bar"></span><span class="step-label">申请 GPU</span></li>
+            <li class="step" data-phase="MOUNTING_DRIVE" data-title="正在挂载云盘"><span class="step-bar"></span><span class="step-label">挂载云盘</span></li>
+            <li class="step" data-phase="INSTALLING_COMFYUI" data-title="正在部署 ComfyUI"><span class="step-bar"></span><span class="step-label">部署 ComfyUI</span></li>
+            <li class="step" data-phase="DOWNLOADING_MODELS" data-title="正在准备模型"><span class="step-bar"></span><span class="step-label">准备模型</span></li>
+            <li class="step" data-phase="STARTING_COMFYUI" data-title="正在启动引擎"><span class="step-bar"></span><span class="step-label">启动引擎</span></li>
+            <li class="step" data-phase="ESTABLISHING_TUNNEL" data-title="正在建立连接"><span class="step-bar"></span><span class="step-label">建立连接</span></li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary" id="enter-btn" href="/?direct=1" hidden>
+          进入 ComfyUI<svg class="i arrow"><use href="#i-arrow-right"/></svg>
+        </a>
+        <div class="split" id="start-group" hidden>
+          <button class="btn btn-primary split-main" id="start-btn" type="button">启动实例</button>
+          <label class="btn btn-primary split-pick" title="本次启动使用的 GPU">
+            <span id="gpu-pick-label">L4</span>
+            <svg class="i"><use href="#i-chevron-down"/></svg>
+            <select id="gpu-pick" aria-label="本次启动使用的 GPU">
+              <option value="L4">L4</option>
+              <option value="A100">A100</option>
+              <option value="H100">H100</option>
+              <option value="T4">T4</option>
+            </select>
+          </label>
+        </div>
+        <button class="btn btn-secondary" id="stop-btn" type="button" hidden>释放实例</button>
+        <label class="auto-jump" id="auto-jump" hidden>
+          <input class="switch switch-sm" type="checkbox" id="auto-jump-toggle" checked />
+          <span>就绪后自动进入</span>
+        </label>
+      </div>
+    </div>
+
+    <dl class="stats">
+      <div class="stat"><dt>GPU</dt><dd id="stat-gpu"><span class="v">—</span><span class="unit"></span></dd></div>
+      <div class="stat"><dt>算力余额</dt><dd id="stat-cu"><span class="v">—</span><span class="unit"></span></dd></div>
+      <div class="stat"><dt>运行 / 排队</dt><dd id="stat-jobs"><span class="v">—</span><span class="unit"></span></dd></div>
+      <div class="stat"><dt>闲置释放</dt><dd id="stat-idle"><span class="v">—</span><span class="unit"></span></dd></div>
+    </dl>
+  </section>
+
+  <section class="reveal" style="--i: 1" aria-labelledby="outputs-title">
+    <header class="section-head">
+      <h2 id="outputs-title">生成结果</h2>
+      <span class="section-count num" id="outputs-count"></span>
+      <div class="section-actions">
+        <button class="btn btn-ghost btn-sm" id="sync-btn" type="button">
+          <svg class="i"><use href="#i-refresh"/></svg>刷新
         </button>
-        <a
-          href="/_control/logout"
-          class="px-3 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 text-xs transition"
-        >
-          退出
+        <a class="btn btn-ghost btn-sm" href="https://drive.google.com/drive/my-drive" target="_blank" rel="noopener">
+          Google Drive<svg class="i"><use href="#i-external"/></svg>
         </a>
       </div>
-    </div>
-
-    <!-- Auto Redirect Banner when booting from root URL -->
-    <div id="auto-redirect-banner" class="hidden bg-indigo-950/60 border border-indigo-500/40 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3 text-xs text-indigo-200">
-        <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping"></span>
-        <span id="auto-redirect-text">正在为您自动准备云端 GPU 与 ComfyUI 环境，健康检查通过后将自动进入 ComfyUI 界面...</span>
+    </header>
+    <p class="section-note">
+      <code>{{ drive_base_dir | replace('/content/drive/', '') }}/outputs</code><span class="note-hint" id="offline-hint" hidden>启动实例后可在线预览</span>
+    </p>
+    <div class="gallery" id="gallery" aria-busy="true">
+      {% for _ in range(3) %}
+      <div class="clip-skel" aria-hidden="true">
+        <div class="skeleton skel-media"></div>
+        <div class="skeleton skel-line"></div>
+        <div class="skeleton skel-line short"></div>
       </div>
-      <label class="flex items-center gap-2 text-xs text-indigo-300 cursor-pointer select-none">
-        <input type="checkbox" id="auto-jump-toggle" checked class="rounded border-indigo-400 accent-indigo-500" />
-        就绪后自动跳转进入 ComfyUI
-      </label>
+      {% endfor %}
     </div>
+  </section>
 
-    <!-- Optional Google Drive One-Time Authorization Alert -->
-    <div id="drive-auth-box" class="hidden bg-amber-950/60 border border-amber-500/40 rounded-2xl p-4 space-y-2">
-      <div class="text-xs font-semibold text-amber-300">Google Drive 云盘挂载授权提示</div>
-      <p class="text-xs text-amber-200/90">
-        检测到当前 Colab 实例挂载 Google Drive 需要一次性浏览器授权确认。您可以点击下方链接完成授权，然后点击“我已完成授权”即可将模型与生成结果同步至云盘：
-      </p>
-      <div class="flex flex-wrap items-center gap-3 pt-1">
-        <a id="drive-auth-link" href="#" target="_blank" class="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-semibold text-xs hover:bg-amber-400">
-          打开 Google Drive 授权页面 ↗
-        </a>
-        <button onclick="completeDriveMount()" class="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs hover:bg-amber-500/30">
-          我已完成授权，继续挂载
-        </button>
-      </div>
-    </div>
-
-    <!-- Main Status & Lifecycle Flowchart Progress -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Left 2 Columns: Progress, Stages & Logs -->
-      <div class="lg:col-span-2 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-5 flex flex-col justify-between">
-        <div class="space-y-5">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-sm font-semibold text-white">实例启动与健康检查进度</h2>
-              <p id="status-description" class="text-xs text-slate-400 mt-0.5">正在获取状态...</p>
-            </div>
-            <span id="progress-percent" class="text-xl font-bold text-indigo-400">0%</span>
-          </div>
-
-          <!-- Progress bar -->
-          <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
-            <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-400 transition-all duration-500" style="width: 0%"></div>
-          </div>
-
-          <div id="status-detail" class="text-xs text-indigo-300 font-mono bg-slate-950/70 px-3.5 py-2.5 rounded-xl border border-slate-800">
-            等待指令...
-          </div>
-
-          <!-- 6 Lifecycle Stages -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-            <div id="step-ALLOCATING_VM" class="p-3 rounded-xl border border-slate-800 bg-slate-950/40 transition-all">
-              <div class="text-slate-400 font-mono text-[11px]">STEP 01</div>
-              <div class="font-semibold text-slate-200 mt-0.5">申请 Colab GPU</div>
-            </div>
-            <div id="step-MOUNTING_DRIVE" class="p-3 rounded-xl border border-slate-800 bg-slate-950/40 transition-all">
-              <div class="text-slate-400 font-mono text-[11px]">STEP 02</div>
-              <div class="font-semibold text-slate-200 mt-0.5">免交互挂载云盘</div>
-            </div>
-            <div id="step-INSTALLING_COMFYUI" class="p-3 rounded-xl border border-slate-800 bg-slate-950/40 transition-all">
-              <div class="text-slate-400 font-mono text-[11px]">STEP 03</div>
-              <div class="font-semibold text-slate-200 mt-0.5">并行部署 ComfyUI</div>
-            </div>
-            <div id="step-DOWNLOADING_MODELS" class="p-3 rounded-xl border border-slate-800 bg-slate-950/40 transition-all">
-              <div class="text-slate-400 font-mono text-[11px]">STEP 04</div>
-              <div class="font-semibold text-slate-200 mt-0.5">秒级软链 H3 模型</div>
-            </div>
-            <div id="step-STARTING_COMFYUI" class="p-3 rounded-xl border border-slate-800 bg-slate-950/40 transition-all">
-              <div class="text-slate-400 font-mono text-[11px]">STEP 05</div>
-              <div class="font-semibold text-slate-200 mt-0.5">启动引擎 & 内存预热</div>
-            </div>
-            <div id="step-ESTABLISHING_TUNNEL" class="p-3 rounded-xl border border-slate-800 bg-slate-950/40 transition-all">
-              <div class="text-slate-400 font-mono text-[11px]">STEP 06</div>
-              <div class="font-semibold text-slate-200 mt-0.5">隧道连通 & 健康检查</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Live Logs -->
-        <div class="pt-2">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-medium text-slate-400">实时部署与运行日志</span>
-            <button onclick="refreshStatus()" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-[11px] text-indigo-300 transition">
-              刷新状态
-            </button>
-          </div>
-          <pre id="log-viewer" class="h-64 overflow-y-auto bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-[11px] font-mono text-slate-300 leading-relaxed">正在加载日志...</pre>
-        </div>
-      </div>
-
-      <!-- Right Column: Runtime Metrics, Beautified Policy Config & Quick MCP/API Card -->
-      <div class="space-y-6">
-        <!-- Metrics & Lifecycle Policy Card -->
-        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-5">
-          <div class="flex items-center justify-between">
-            <h2 class="text-sm font-semibold text-white">算力监控与生命周期策略</h2>
-            <span class="text-[11px] text-slate-400 font-mono" id="session-label">minimax-h3</span>
-          </div>
-
-          <!-- 2x2 Metrics Grid -->
-          <div class="grid grid-cols-2 gap-3 text-xs">
-            <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/90">
-              <div class="text-slate-400 text-[11px]">当前 GPU 型号</div>
-              <div id="metric-gpu" class="text-base font-bold text-white mt-1">L4</div>
-            </div>
-            <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/90">
-              <div class="text-slate-400 text-[11px]">Colab 剩余算力</div>
-              <div id="metric-cu" class="text-base font-bold text-emerald-400 mt-1">-- CU</div>
-            </div>
-            <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/90">
-              <div class="text-slate-400 text-[11px]">运行 / 排队任务</div>
-              <div id="metric-jobs" class="text-base font-bold text-indigo-300 mt-1">0 / 0</div>
-            </div>
-            <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800/90">
-              <div class="text-slate-400 text-[11px]">闲置释放倒计时</div>
-              <div id="metric-idle" class="text-base font-bold text-amber-300 mt-1">--:--</div>
-            </div>
-          </div>
-
-          <!-- Beautified Lifecycle Strategy Form -->
-          <form onsubmit="saveSettings(event)" class="space-y-4 pt-4 border-t border-slate-800/90 text-xs">
-            <div class="flex items-center justify-between">
-              <span class="font-semibold text-slate-200">生命周期策略配置</span>
-              <span class="text-[11px] text-slate-400">即时生效</span>
-            </div>
-
-            <!-- Interactive GPU Selector Cards -->
-            <div class="space-y-2">
-              <label class="block text-slate-400 text-[11px]">默认申请 GPU 规格（点击选择）</label>
-              <input type="hidden" id="cfg-gpu" value="L4" />
-              <div class="grid grid-cols-2 gap-2">
-                <button type="button" onclick="selectGpu('L4')" id="gpu-card-L4" class="gpu-card gpu-card-active text-left p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700">
-                  <div class="flex items-center justify-between">
-                    <span class="font-bold text-white text-xs">NVIDIA L4</span>
-                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-indigo-500/25 text-indigo-300 font-medium">推荐</span>
-                  </div>
-                  <div class="text-[10px] text-slate-400 mt-1">24GB 显存 · 性价比最高</div>
-                </button>
-
-                <button type="button" onclick="selectGpu('A100')" id="gpu-card-A100" class="gpu-card text-left p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700">
-                  <div class="flex items-center justify-between">
-                    <span class="font-bold text-white text-xs">A100</span>
-                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 font-medium">极速</span>
-                  </div>
-                  <div class="text-[10px] text-slate-400 mt-1">40/80GB 显存 · 高吞吐</div>
-                </button>
-
-                <button type="button" onclick="selectGpu('H100')" id="gpu-card-H100" class="gpu-card text-left p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700">
-                  <div class="flex items-center justify-between">
-                    <span class="font-bold text-white text-xs">H100</span>
-                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300 font-medium">旗舰</span>
-                  </div>
-                  <div class="text-[10px] text-slate-400 mt-1">80GB 显存 · 顶级算力</div>
-                </button>
-
-                <button type="button" onclick="selectGpu('T4')" id="gpu-card-T4" class="gpu-card text-left p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700">
-                  <div class="flex items-center justify-between">
-                    <span class="font-bold text-white text-xs">Tesla T4</span>
-                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400 font-medium">基础</span>
-                  </div>
-                  <div class="text-[10px] text-slate-400 mt-1">16GB 显存 · 轻量任务</div>
-                </button>
-              </div>
-            </div>
-
-            <!-- Interactive Idle Timeout Presets + Stepper -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <label class="text-slate-400 text-[11px]">无任务闲置自动释放时长</label>
-                <span class="text-[11px] font-mono text-indigo-300" id="idle-mins-label">30 分钟</span>
-              </div>
-              <div class="grid grid-cols-4 gap-1.5">
-                <button type="button" onclick="setIdleMins(15)" data-mins="15" class="idle-pill py-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-[11px] text-slate-300 transition">15分</button>
-                <button type="button" onclick="setIdleMins(30)" data-mins="30" class="idle-pill preset-pill-active py-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-[11px] text-slate-300 transition">30分</button>
-                <button type="button" onclick="setIdleMins(60)" data-mins="60" class="idle-pill py-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-[11px] text-slate-300 transition">60分</button>
-                <button type="button" onclick="setIdleMins(120)" data-mins="120" class="idle-pill py-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 text-[11px] text-slate-300 transition">120分</button>
-              </div>
-              <div class="flex items-center gap-2 pt-0.5">
-                <button type="button" onclick="stepIdleMins(-5)" class="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-300 font-bold transition">-</button>
-                <input
-                  id="cfg-idle-mins"
-                  type="number"
-                  min="5"
-                  max="240"
-                  value="30"
-                  oninput="syncIdlePills(this.value)"
-                  class="flex-1 text-center h-8 rounded-lg bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-indigo-500"
-                />
-                <button type="button" onclick="stepIdleMins(5)" class="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-300 font-bold transition">+</button>
-              </div>
-            </div>
-
-            <!-- Animated Toggle Switch for Google Drive -->
-            <div
-              onclick="toggleDriveSwitch()"
-              class="flex items-center justify-between p-3 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 cursor-pointer select-none transition"
-            >
-              <div class="pr-2">
-                <div class="text-xs font-medium text-slate-200">Google Drive 云盘直连持久化</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">软链云盘模型并直接将生成视频存入云盘</div>
-              </div>
-              <input type="checkbox" id="cfg-drive" checked class="hidden" />
-              <div id="drive-switch-track" class="w-10 h-5 rounded-full bg-indigo-600 relative transition-colors duration-200 shrink-0">
-                <div id="drive-switch-thumb" class="w-4 h-4 rounded-full bg-white absolute top-0.5 left-5 transition-all duration-200 shadow"></div>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              id="save-cfg-btn"
-              class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600/90 to-violet-600/90 hover:from-indigo-500 hover:to-violet-500 active:scale-[0.99] text-white font-semibold transition shadow-lg shadow-indigo-600/20"
-            >
-              保存生命周期策略
-            </button>
-          </form>
-        </div>
-
-        <!-- Quick API & MCP Integration Card -->
-        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-3.5">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-sm font-semibold text-white">API 与 MCP 快捷接入</h2>
-              <p class="text-[11px] text-slate-400 mt-0.5">支持 Claude Code / LLM 与外部系统调用</p>
-            </div>
-            <a
-              href="/_control/integration"
-              class="px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 text-[11px] text-indigo-300 font-semibold transition"
-            >
-              完整接入文档 ↗
-            </a>
-          </div>
-
-          <!-- Mini Switcher between MCP and REST API -->
-          <div class="grid grid-cols-2 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 text-[11px]">
-            <button type="button" id="mini-tab-mcp" onclick="switchMiniCode('mcp')" class="py-1.5 rounded-lg bg-indigo-600 text-white font-semibold transition">
-              Claude Code (MCP)
-            </button>
-            <button type="button" id="mini-tab-api" onclick="switchMiniCode('api')" class="py-1.5 rounded-lg text-slate-400 hover:text-slate-200 font-semibold transition">
-              REST API (cURL)
-            </button>
-          </div>
-
-          <div id="mini-panel-mcp" class="space-y-2">
-            <div class="flex items-center justify-between text-[11px] text-slate-400">
-              <span>一行命令添加到本地 Claude Code：</span>
-              <button onclick="copyPre('mini-code-mcp')" class="text-indigo-400 hover:underline">复制</button>
-            </div>
-            <pre id="mini-code-mcp" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-slate-300 overflow-x-auto">claude mcp add --transport http --scope user minimax-h3 \
-  "<span class="dyn-origin">http://127.0.0.1:{{ port }}</span>/mcp" \
-  --header "X-API-Key: {{ api_key }}"</pre>
-          </div>
-
-          <div id="mini-panel-api" class="hidden space-y-2">
-            <div class="flex items-center justify-between text-[11px] text-slate-400">
-              <span>按需自动唤醒并生成音视频：</span>
-              <button onclick="copyPre('mini-code-api')" class="text-indigo-400 hover:underline">复制</button>
-            </div>
-            <pre id="mini-code-api" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-slate-300 overflow-x-auto">curl -X POST "<span class="dyn-origin">http://127.0.0.1:{{ port }}</span>/api/v1/video/generate" \
-  -H "X-API-Key: {{ api_key }}" \
-  -H "Content-Type: application/json" \
-  -d '{"prompt":"Sci-fi city dusk, flying cars, synth music","width":864,"height":480,"duration":5}'</pre>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Google Drive Cloud Outputs Gallery -->
-    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div class="flex items-center gap-2">
-            <h2 class="text-sm font-semibold text-white">Google Drive 云盘生成结果清单</h2>
-            <span class="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-medium">
-              零本地 VPS 占用
-            </span>
-          </div>
-          <p class="text-xs text-slate-400 mt-1">
-            所有生成视频均直接软链并保存在您的 Google Drive 云端硬盘 <code class="text-indigo-300">{{ drive_base_dir }}/outputs</code>，不在本机 VPS 留存副本
-          </p>
-        </div>
-        <div class="flex items-center gap-2">
-          <a
-            href="https://drive.google.com/drive/my-drive"
-            target="_blank"
-            class="px-3 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/35 text-xs text-indigo-300 font-medium transition"
-          >
-            打开 Google Drive 云盘 ↗
-          </a>
-          <button
-            onclick="syncOutputsNow()"
-            id="sync-btn"
-            class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition"
-          >
-            刷新云盘输出索引
+  <section class="card logs reveal" id="logs" style="--i: 2">
+    <button class="logs-head" id="logs-toggle" type="button" aria-expanded="false" aria-controls="logs-body">
+      <span class="logs-title">运行日志</span>
+      <span class="logs-peek" id="logs-peek"></span>
+      <svg class="i chev"><use href="#i-chevron-down"/></svg>
+    </button>
+    <div class="collapse" id="logs-body">
+      <div class="collapse-inner">
+        <div class="log-wrap">
+          <pre class="log-view" id="log-view">暂无日志</pre>
+          <button class="icon-btn copy-btn" type="button" data-copy-target="log-view" aria-label="复制日志" title="复制日志">
+            <svg class="i i-idle"><use href="#i-copy"/></svg>
+            <svg class="i i-done"><use href="#i-check"/></svg>
           </button>
         </div>
       </div>
-      <div id="outputs-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs text-slate-400">
-        正在加载云盘输出清单...
+    </div>
+  </section>
+</main>
+
+<dialog class="dialog" id="settings-dialog" aria-labelledby="settings-title">
+  <form class="dialog-card" id="settings-form" novalidate>
+    <header class="dialog-head">
+      <h2 id="settings-title">设置</h2>
+      <button class="icon-btn" type="button" data-close aria-label="关闭">
+        <svg class="i"><use href="#i-x"/></svg>
+      </button>
+    </header>
+    <div class="dialog-body settings-body">
+      <div role="group" aria-labelledby="gpu-label">
+        <span class="field-label" id="gpu-label">默认 GPU</span>
+        <div class="segmented" id="seg-gpu">
+          <input type="radio" name="gpu" id="gpu-L4" value="L4" data-hint="24 GB 显存 · 性价比之选" /><label for="gpu-L4">L4</label>
+          <input type="radio" name="gpu" id="gpu-A100" value="A100" data-hint="40/80 GB 显存 · 高吞吐" /><label for="gpu-A100">A100</label>
+          <input type="radio" name="gpu" id="gpu-H100" value="H100" data-hint="80 GB 显存 · 旗舰算力" /><label for="gpu-H100">H100</label>
+          <input type="radio" name="gpu" id="gpu-T4" value="T4" data-hint="16 GB 显存 · 适合轻量任务" /><label for="gpu-T4">T4</label>
+          <span class="seg-thumb" aria-hidden="true"></span>
+        </div>
+        <span class="field-hint" id="gpu-hint"></span>
       </div>
+
+      <div role="group" aria-labelledby="idle-label">
+        <span class="field-label" id="idle-label">闲置自动释放</span>
+        <div class="segmented" id="seg-idle">
+          <input type="radio" name="idle" id="idle-15" value="15" /><label for="idle-15">15 分钟</label>
+          <input type="radio" name="idle" id="idle-30" value="30" /><label for="idle-30">30 分钟</label>
+          <input type="radio" name="idle" id="idle-60" value="60" /><label for="idle-60">1 小时</label>
+          <input type="radio" name="idle" id="idle-120" value="120" /><label for="idle-120">2 小时</label>
+          <input type="radio" name="idle" id="idle-custom-opt" value="custom" /><label for="idle-custom-opt">自定义</label>
+          <span class="seg-thumb" aria-hidden="true"></span>
+        </div>
+        <div class="collapse" id="idle-custom">
+          <div class="collapse-inner">
+            <div class="custom-row">
+              <input class="input num" type="number" id="idle-input" min="5" max="240" step="5" inputmode="numeric" aria-label="自定义闲置分钟数" />
+              <span>分钟，范围 5–240</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <label class="field-row" for="drive-switch">
+        <span>
+          <span class="field-label">Google Drive 持久化</span>
+          <span class="field-hint">模型从云盘软链，生成结果直接存入云盘</span>
+        </span>
+        <input class="switch" type="checkbox" id="drive-switch" />
+      </label>
+    </div>
+    <footer class="dialog-foot">
+      <button class="btn btn-secondary" type="button" data-close>取消</button>
+      <button class="btn btn-primary" type="submit" id="save-btn">保存</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog dialog-sm" id="confirm-dialog" aria-labelledby="confirm-title">
+  <form class="dialog-card" method="dialog">
+    <div class="confirm-body">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-message"></p>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-secondary" value="cancel">取消</button>
+      <button class="btn btn-danger" value="confirm" id="confirm-ok">确定</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="dialog viewer" id="viewer" aria-labelledby="viewer-name">
+  <div class="dialog-card">
+    <div class="viewer-media" id="viewer-media"></div>
+    <div class="viewer-bar">
+      <div class="viewer-info">
+        <div class="viewer-name" id="viewer-name"></div>
+        <div class="viewer-meta" id="viewer-meta"></div>
+      </div>
+      <a class="btn btn-secondary btn-sm" id="viewer-download" href="#" download>
+        <svg class="i"><use href="#i-download"/></svg>下载
+      </a>
+      <button class="icon-btn" type="button" data-close aria-label="关闭">
+        <svg class="i"><use href="#i-x"/></svg>
+      </button>
     </div>
   </div>
+</dialog>
+{% endblock %}
 
+{% block scripts %}
   <script>
-    const autoRedirectFromRoot = {{ 'true' if auto_redirect else 'false' }};
-    const stepsOrder = [
-      'ALLOCATING_VM',
-      'MOUNTING_DRIVE',
-      'INSTALLING_COMFYUI',
-      'DOWNLOADING_MODELS',
-      'STARTING_COMFYUI',
-      'ESTABLISHING_TUNNEL'
-    ];
-    let settingsLoaded = false;
-    let currentPhase = 'STOPPED';
-
-    // Replace dynamic origin in code snippets
-    document.querySelectorAll('.dyn-origin').forEach(el => {
-      el.textContent = window.location.origin;
-    });
-
-    if (autoRedirectFromRoot) {
-      document.getElementById('auto-redirect-banner').classList.remove('hidden');
-    }
-
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      document.getElementById('toast-text').textContent = msg;
-      t.classList.remove('hidden');
-      setTimeout(() => t.classList.add('hidden'), 2400);
-    }
-
-    function selectGpu(gpu) {
-      document.getElementById('cfg-gpu').value = gpu;
-      ['L4', 'A100', 'H100', 'T4'].forEach(g => {
-        const card = document.getElementById(`gpu-card-${g}`);
-        if (!card) return;
-        if (g === gpu) {
-          card.classList.add('gpu-card-active');
-        } else {
-          card.classList.remove('gpu-card-active');
-        }
-      });
-    }
-
-    function syncIdlePills(minsVal) {
-      const m = parseInt(minsVal, 10) || 30;
-      document.getElementById('idle-mins-label').textContent = `${m} 分钟`;
-      document.querySelectorAll('.idle-pill').forEach(btn => {
-        if (parseInt(btn.getAttribute('data-mins'), 10) === m) {
-          btn.classList.add('preset-pill-active');
-        } else {
-          btn.classList.remove('preset-pill-active');
-        }
-      });
-    }
-
-    function setIdleMins(mins) {
-      document.getElementById('cfg-idle-mins').value = mins;
-      syncIdlePills(mins);
-    }
-
-    function stepIdleMins(delta) {
-      const inp = document.getElementById('cfg-idle-mins');
-      const next = Math.min(240, Math.max(5, (parseInt(inp.value, 10) || 30) + delta));
-      inp.value = next;
-      syncIdlePills(next);
-    }
-
-    function setDriveSwitchVisual(checked) {
-      const cb = document.getElementById('cfg-drive');
-      const track = document.getElementById('drive-switch-track');
-      const thumb = document.getElementById('drive-switch-thumb');
-      cb.checked = checked;
-      if (checked) {
-        track.classList.remove('bg-slate-700');
-        track.classList.add('bg-indigo-600');
-        thumb.style.left = '1.25rem';
-      } else {
-        track.classList.remove('bg-indigo-600');
-        track.classList.add('bg-slate-700');
-        thumb.style.left = '0.125rem';
-      }
-    }
-
-    function toggleDriveSwitch() {
-      const cb = document.getElementById('cfg-drive');
-      setDriveSwitchVisual(!cb.checked);
-    }
-
-    function switchMiniCode(tab) {
-      const mcpBtn = document.getElementById('mini-tab-mcp');
-      const apiBtn = document.getElementById('mini-tab-api');
-      const mcpPanel = document.getElementById('mini-panel-mcp');
-      const apiPanel = document.getElementById('mini-panel-api');
-      if (tab === 'mcp') {
-        mcpBtn.className = 'py-1.5 rounded-lg bg-indigo-600 text-white font-semibold transition';
-        apiBtn.className = 'py-1.5 rounded-lg text-slate-400 hover:text-slate-200 font-semibold transition';
-        mcpPanel.classList.remove('hidden');
-        apiPanel.classList.add('hidden');
-      } else {
-        apiBtn.className = 'py-1.5 rounded-lg bg-indigo-600 text-white font-semibold transition';
-        mcpBtn.className = 'py-1.5 rounded-lg text-slate-400 hover:text-slate-200 font-semibold transition';
-        apiPanel.classList.remove('hidden');
-        mcpPanel.classList.add('hidden');
-      }
-    }
-
-    function copyPre(id) {
-      const txt = document.getElementById(id).innerText;
-      navigator.clipboard.writeText(txt);
-      showToast('已复制到剪贴板 ✓');
-    }
-
-    async function refreshStatus() {
-      try {
-        const resp = await fetch('/api/v1/instance/status?passive=1');
-        if (resp.status === 401) {
-          window.location.href = '/_control/login';
-          return;
-        }
-        const d = await resp.json();
-        const prevPhase = currentPhase;
-        currentPhase = d.phase;
-
-        document.getElementById('phase-badge').textContent = d.phase;
-        document.getElementById('status-description').textContent = d.description || '';
-        document.getElementById('status-detail').textContent = d.detail || d.description || '';
-        document.getElementById('progress-percent').textContent = `${d.progress}%`;
-        document.getElementById('progress-bar').style.width = `${d.progress}%`;
-
-        document.getElementById('metric-gpu').textContent = d.active_gpu || 'L4';
-        document.getElementById('metric-cu').textContent = d.compute_balance !== null ? `${d.compute_balance} CU` : '-- CU';
-        document.getElementById('metric-jobs').textContent = `${d.running_jobs} / ${d.queued_jobs}`;
-
-        if (d.phase === 'READY') {
-          const mins = Math.floor(d.remaining_idle_seconds / 60);
-          const secs = String(d.remaining_idle_seconds % 60).padStart(2, '0');
-          document.getElementById('metric-idle').textContent = `${mins}:${secs}`;
-          document.getElementById('enter-comfy-btn').classList.remove('hidden');
-          if (autoRedirectFromRoot && document.getElementById('auto-jump-toggle').checked) {
-            window.location.href = '/?direct=1';
-            return;
-          }
-        } else {
-          document.getElementById('metric-idle').textContent = d.phase === 'STOPPED' ? '已休眠' : '部署中';
-          document.getElementById('enter-comfy-btn').classList.add('hidden');
-        }
-
-        if (prevPhase !== currentPhase && (currentPhase === 'READY' || currentPhase === 'STOPPED')) {
-          loadOutputs();
-        }
-
-        // Drive auth alert
-        if (d.drive_auth_url) {
-          document.getElementById('drive-auth-box').classList.remove('hidden');
-          document.getElementById('drive-auth-link').href = d.drive_auth_url;
-        } else {
-          document.getElementById('drive-auth-box').classList.add('hidden');
-        }
-
-        // Update step highlights
-        const currentIdx = stepsOrder.indexOf(d.phase);
-        stepsOrder.forEach((st, idx) => {
-          const el = document.getElementById(`step-${st}`);
-          if (!el) return;
-          el.classList.remove('step-active', 'step-done');
-          if (d.phase === 'READY' || (currentIdx > idx && currentIdx !== -1)) {
-            el.classList.add('step-done');
-          } else if (currentIdx === idx) {
-            el.classList.add('step-active');
-          }
-        });
-
-        // Update logs
-        const logEl = document.getElementById('log-viewer');
-        if (d.recent_logs && d.recent_logs.length) {
-          logEl.textContent = d.recent_logs.join('\n');
-          logEl.scrollTop = logEl.scrollHeight;
-        }
-
-        if (!settingsLoaded && d.settings) {
-          settingsLoaded = true;
-          selectGpu(d.settings.default_gpu || 'L4');
-          setIdleMins(Math.round((d.settings.idle_timeout_seconds || 1800) / 60));
-          setDriveSwitchVisual(!!d.settings.enable_drive_mount);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    async function startInstance() {
-      const gpu = document.getElementById('cfg-gpu').value;
-      showToast(`正在请求唤醒 Colab (${gpu}) 实例...`);
-      await fetch(`/api/v1/instance/start?gpu=${encodeURIComponent(gpu)}`, { method: 'POST' });
-      refreshStatus();
-    }
-
-    async function stopInstance() {
-      if (!confirm('确认将生成结果刷新至 Google Drive 并立即释放 Colab GPU 实例吗？')) return;
-      showToast('正在同步至 Google Drive 并释放 GPU 实例...');
-      await fetch('/api/v1/instance/stop', { method: 'POST' });
-      refreshStatus();
-      loadOutputs();
-    }
-
-    async function completeDriveMount() {
-      const r = await fetch('/api/v1/instance/drive-complete', { method: 'POST' });
-      const d = await r.json();
-      showToast(d.message || '已触发挂载');
-      refreshStatus();
-    }
-
-    async function saveSettings(e) {
-      e.preventDefault();
-      const payload = {
-        default_gpu: document.getElementById('cfg-gpu').value,
-        idle_timeout_seconds: parseInt(document.getElementById('cfg-idle-mins').value, 10) * 60,
-        enable_drive_mount: document.getElementById('cfg-drive').checked
-      };
-      await fetch('/api/v1/instance/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      showToast('生命周期策略配置已保存 ✓');
-      refreshStatus();
-    }
-
-    async function syncOutputsNow() {
-      const btn = document.getElementById('sync-btn');
-      btn.textContent = '正在刷新云盘索引...';
-      await fetch('/api/v1/instance/sync', { method: 'POST' });
-      btn.textContent = '刷新云盘输出索引';
-      showToast('已同步最新 Google Drive 输出清单 ✓');
-      loadOutputs();
-    }
-
-    async function loadOutputs() {
-      try {
-        const r = await fetch('/api/v1/outputs');
-        if (!r.ok) return;
-        const data = await r.json();
-        const grid = document.getElementById('outputs-grid');
-        if (!data.files || !data.files.length) {
-          grid.innerHTML = '<div class="col-span-full text-slate-500">暂无 Google Drive 云盘输出记录。在 ComfyUI、REST API 或 MCP 生成视频后将自动直存至 Google Drive 并在此展示。</div>';
-          return;
-        }
-        grid.innerHTML = data.files.map(f => {
-          const isVideo = f.name.endsWith('.mp4') || f.name.endsWith('.webm');
-          const sizeMb = f.size ? `${(f.size / 1024 / 1024).toFixed(2)} MB` : '';
-          const drivePath = f.drive_path || `{{ drive_base_dir }}/outputs/${f.name}`;
-          let mediaHtml = '';
-          if (currentPhase === 'READY') {
-            mediaHtml = isVideo
-              ? `<video src="${f.url}" controls preload="metadata" class="w-full h-44 object-cover rounded-lg bg-black"></video>`
-              : `<img src="${f.url}" class="w-full h-44 object-cover rounded-lg bg-black" />`;
-          } else {
-            mediaHtml = `
-              <div class="w-full h-36 rounded-lg bg-slate-900/90 border border-slate-800/80 flex flex-col items-center justify-center p-4 text-center space-y-1.5">
-                <div class="text-indigo-400 font-semibold text-xs">☁️ 已持久化存储在 Google Drive</div>
-                <div class="text-[11px] text-slate-400 font-mono break-all line-clamp-2">${drivePath}</div>
-                <div class="text-[10px] text-slate-500">（实例休眠中，可直接打开 Google Drive 查看，或唤醒实例后在线流式预览）</div>
-              </div>
-            `;
-          }
-          return `
-            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
-              ${mediaHtml}
-              <div class="flex items-center justify-between gap-2 pt-0.5">
-                <div class="truncate">
-                  <div class="truncate font-mono text-[11px] text-slate-200" title="${f.name}">${f.name}</div>
-                  <div class="text-[10px] text-slate-500 font-mono">${sizeMb} · Google Drive 直存</div>
-                </div>
-                ${
-                  currentPhase === 'READY'
-                    ? `<a href="${f.url}" download class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-[11px] font-medium shrink-0 transition">流式下载</a>`
-                    : `<a href="https://drive.google.com/drive/my-drive" target="_blank" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] shrink-0 transition">去云盘查看 ↗</a>`
-                }
-              </div>
-            </div>
-          `;
-        }).join('');
-      } catch (e) {}
-    }
-
-    setInterval(refreshStatus, 2500);
-    refreshStatus();
-    loadOutputs();
+(() => {
+  'use strict';
+  const BOOT = {{ {"autoRedirect": auto_redirect} | tojson }};
+{% include "partials/js/dashboard/status.js" %}
+{% include "partials/js/dashboard/gallery.js" %}
+{% include "partials/js/dashboard/settings.js" %}
+{% include "partials/js/dashboard/main.js" %}
+})();
   </script>
-</body>
-</html>
+{% endblock %}
