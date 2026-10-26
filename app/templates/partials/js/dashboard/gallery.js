@@ -9,7 +9,16 @@ const DRIVE_URL = 'https://drive.google.com/drive/my-drive';
 const canHover = window.matchMedia('(hover: hover)').matches;
 const relativeTime = new Intl.RelativeTimeFormat('zh-CN', { numeric: 'auto' });
 
-const iconSvg = (id) => `<svg class="i"><use href="#${id}"/></svg>`;
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function iconSvg(id) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', 'i');
+  const use = document.createElementNS(SVG_NS, 'use');
+  use.setAttribute('href', `#${id}`);
+  svg.append(use);
+  return svg;
+}
 const baseName = (path) => path.split('/').pop();
 
 function mediaKind(name) {
@@ -49,7 +58,7 @@ const fileMeta = (file) => [formatBytes(file.size), formatWhen(file.mtime)].filt
 function placeholder(kind) {
   const ph = document.createElement('span');
   ph.className = 'clip-ph';
-  ph.innerHTML = iconSvg(KIND_ICONS[kind] || 'i-file');
+  ph.append(iconSvg(KIND_ICONS[kind] || 'i-file'));
   return ph;
 }
 
@@ -118,14 +127,14 @@ function buildAction(file, ready) {
     link.setAttribute('download', name);
     link.title = '下载';
     link.setAttribute('aria-label', `下载 ${name}`);
-    link.innerHTML = iconSvg('i-download');
+    link.append(iconSvg('i-download'));
   } else {
     link.href = DRIVE_URL;
     link.target = '_blank';
     link.rel = 'noopener';
     link.title = '在 Google Drive 中查看';
     link.setAttribute('aria-label', '在 Google Drive 中查看');
-    link.innerHTML = iconSvg('i-external');
+    link.append(iconSvg('i-external'));
   }
   return link;
 }
@@ -168,9 +177,14 @@ function buildClip(file, index, ready) {
 function messageBlock(title, body) {
   const box = document.createElement('div');
   box.className = 'empty';
-  box.innerHTML = `<span class="empty-icon">${iconSvg('i-film')}</span><h3></h3><p></p>`;
-  $('h3', box).textContent = title;
-  $('p', box).textContent = body;
+  const icon = document.createElement('span');
+  icon.className = 'empty-icon';
+  icon.append(iconSvg('i-film'));
+  const heading = document.createElement('h3');
+  heading.textContent = title;
+  const text = document.createElement('p');
+  text.textContent = body;
+  box.append(icon, heading, text);
   return box;
 }
 
