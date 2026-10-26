@@ -340,11 +340,8 @@ async def catch_all_proxy(request: Request, path: str):
         await manager.wait_until_ready(timeout=1200)
         return await proxy_http_request(request, path)
 
-    # 4. Browser user visiting root or page when instance is sleeping/booting:
-    # Automatically trigger instance startup and show the live startup progress page!
-    if config.auto_start_on_visit and manager.phase in (InstancePhase.STOPPED, InstancePhase.ERROR):
-        await manager.ensure_started()
-
+    # 4. Browser user visiting root or a page while the instance is not ready:
+    # show the console without booting; the GPU starts only from its start button.
     return templates.TemplateResponse(
         request,
         "dashboard.html",

@@ -19,7 +19,6 @@ class AppConfig(BaseModel):
     ]
 
     idle_timeout_seconds: int = int(os.getenv("IDLE_TIMEOUT_SECONDS", "1800"))
-    auto_start_on_visit: bool = os.getenv("AUTO_START_ON_VISIT", "true").lower() in ("1", "true", "yes")
 
     enable_drive_mount: bool = os.getenv("ENABLE_DRIVE_MOUNT", "true").lower() in ("1", "true", "yes")
     drive_base_dir: str = os.getenv("DRIVE_BASE_DIR", "/content/drive/MyDrive/Colab-MiniMax-H3")
@@ -66,8 +65,6 @@ def load_runtime_settings() -> None:
                 config.idle_timeout_seconds = int(data["idle_timeout_seconds"])
             if "enable_drive_mount" in data:
                 config.enable_drive_mount = bool(data["enable_drive_mount"])
-            if "auto_start_on_visit" in data:
-                config.auto_start_on_visit = bool(data["auto_start_on_visit"])
         except Exception:
             pass
 
@@ -79,15 +76,12 @@ def save_runtime_settings(updates: dict) -> dict:
         config.idle_timeout_seconds = max(60, int(updates["idle_timeout_seconds"]))
     if "enable_drive_mount" in updates:
         config.enable_drive_mount = bool(updates["enable_drive_mount"])
-    if "auto_start_on_visit" in updates:
-        config.auto_start_on_visit = bool(updates["auto_start_on_visit"])
 
     SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "default_gpu": config.default_gpu,
         "idle_timeout_seconds": config.idle_timeout_seconds,
         "enable_drive_mount": config.enable_drive_mount,
-        "auto_start_on_visit": config.auto_start_on_visit,
     }
     SETTINGS_FILE.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return payload

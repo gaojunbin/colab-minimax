@@ -164,7 +164,6 @@ class ColabLifecycleManager:
                 "default_gpu": config.default_gpu,
                 "idle_timeout_seconds": config.idle_timeout_seconds,
                 "enable_drive_mount": config.enable_drive_mount,
-                "auto_start_on_visit": config.auto_start_on_visit,
             },
             "recent_logs": list(self.logs)[-80:],
         }
